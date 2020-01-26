@@ -40,12 +40,21 @@ def get_channel_messages(channel_name: str) -> List[Message]:
     messages = slack_client.channels_history(channel=channel_id)["messages"]
     return [Message.from_dict(m) for m in messages]
 
+def filter_stale_messages(messages: List[Message], age: datetime.timedelta) -> List[Message]:
+    """ Return a list of all messages posted that are younger than `age` """
+    good_messages = []
+    for m in messages:
+        if m.ts > datetime.datetime.now() - age:
+            good_messages.append(m)
+    return good_messages
+
 
 @app.get("/")
 def poll_notifications():
     try:
         messages = get_channel_messages("slackbot-testing")
-        print("History", *messages, sep="\n")
+        recent_messages = filter_stale_messages(messages, datetime.timedelta(days=30))
+        print("Recent", *recent_messages, sep="\n")
     except Exception as e:
         return {"success": False, "error": str(e)}
     return {"success": True}
