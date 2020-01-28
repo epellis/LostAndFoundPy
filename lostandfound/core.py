@@ -55,24 +55,31 @@ def filter_stale_messages(
     return good_messages
 
 
-@app.get("/poll/{offset_m}")
-def poll_notifications(offset_m: int):
+@app.get("/poll/")
+def poll_notifications():
     try:
         messages = get_channel_messages("slackbot-testing")
         recent_messages = filter_stale_messages(messages, datetime.timedelta(days=10))
+
+        offset_m = int(os.environ["OFFSET_M"])
 
         for m in messages:
             if "Reminder" in m.text:
                 continue
 
-            post_time = max(m.ts, datetime.datetime.now()) + datetime.timedelta(minutes=offset_m) 
+            post_time = max(m.ts, datetime.datetime.now()) + datetime.timedelta(
+                minutes=offset_m
+            )
             message = f"Reminder: {m.text}"
-            print(f"Posting {message} at: {post_time.strftime('%Y-%m-%d %H:%M')}")
-            slack_client.chat_scheduleMessage(channel=get_channel_id_by_name("slackbot-testing"),
-                    post_at=str(post_time.timestamp()),
-                    text=message)
+            print(f"Posting {message} at: {post_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            slack_client.chat_scheduleMessage(
+                channel=get_channel_id_by_name("slackbot-testing"),
+                post_at=str(post_time.timestamp()),
+                text=message,
+            )
             break
 
     except Exception as e:
+        print(f"ERROR: Failed with exception: {e}")
         return {"success": False, "error": str(e)}
     return {"success": True}

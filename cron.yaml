@@ -1,0 +1,4 @@
+cron:
+- description: "poll for outstanding notifications"
+  url: /poll
+  schedule: every 24 hours
