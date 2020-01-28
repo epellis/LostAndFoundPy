@@ -9,6 +9,7 @@ app = FastAPI()
 slack_token = os.environ["SLACK_TOKEN"]
 slack_client = slack.WebClient(token=slack_token)
 
+
 class Message:
     ts: datetime.datetime
     text: str
@@ -19,12 +20,13 @@ class Message:
 
     @classmethod
     def from_dict(cls, d: Dict):
-        time = datetime.datetime.utcfromtimestamp(float(d["ts"]))
+        time = datetime.datetime.fromtimestamp(float(d["ts"]))
         return Message(time, d["text"])
 
     def __repr__(self) -> str:
         time = self.ts.strftime("%H:%M:%S")
         return f"Message(ts={time}, text={self.text})"
+
 
 def get_channel_id_by_name(name: str) -> str:
     """ Returns a channel ID, or else raises a ValueError """
@@ -34,13 +36,17 @@ def get_channel_id_by_name(name: str) -> str:
             return c["id"]
     raise ValueError("Couldn't find channel ID")
 
+
 def get_channel_messages(channel_name: str) -> List[Message]:
     """ Returns all messages posted in a channel """
     channel_id = get_channel_id_by_name("slackbot-testing")
     messages = slack_client.channels_history(channel=channel_id)["messages"]
     return [Message.from_dict(m) for m in messages]
 
-def filter_stale_messages(messages: List[Message], age: datetime.timedelta) -> List[Message]:
+
+def filter_stale_messages(
+    messages: List[Message], age: datetime.timedelta
+) -> List[Message]:
     """ Return a list of all messages posted that are younger than `age` """
     good_messages = []
     for m in messages:
@@ -49,13 +55,24 @@ def filter_stale_messages(messages: List[Message], age: datetime.timedelta) -> L
     return good_messages
 
 
-@app.get("/")
-def poll_notifications():
+@app.get("/poll/{offset_m}")
+def poll_notifications(offset_m: int):
     try:
         messages = get_channel_messages("slackbot-testing")
-        recent_messages = filter_stale_messages(messages, datetime.timedelta(days=30))
-        print("Recent", *recent_messages, sep="\n")
+        recent_messages = filter_stale_messages(messages, datetime.timedelta(days=10))
+
+        for m in messages:
+            if "Reminder" in m.text:
+                continue
+
+            post_time = max(m.ts, datetime.datetime.now()) + datetime.timedelta(minutes=offset_m) 
+            message = f"Reminder: {m.text}"
+            print(f"Posting {message} at: {post_time.strftime('%Y-%m-%d %H:%M')}")
+            slack_client.chat_scheduleMessage(channel=get_channel_id_by_name("slackbot-testing"),
+                    post_at=str(post_time.timestamp()),
+                    text=message)
+            break
+
     except Exception as e:
         return {"success": False, "error": str(e)}
     return {"success": True}
-
