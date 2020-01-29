@@ -5,11 +5,14 @@ from typing import List, Dict
 import time
 import datetime
 from enum import Enum
+import logging
 
 app = FastAPI()
 slack_token = os.environ["SLACK_TOKEN"]
 slack_client = slack.WebClient(token=slack_token)
 
+log_level = os.environ.get('LOGLEVEL', 'WARNING').upper()
+logging.basicConfig(level=log_level)
 
 class Message:
     class ContentType(Enum):
@@ -73,32 +76,36 @@ def filter_nonimage_messages(messages: List[Message]) -> List[Message]:
             good_messages.append(m)
     return good_messages
 
+def filter_reminder_messages(messages: List[Message]) -> List[Message]:
+    """ Returns a list of all messsages that are not reminder posts """
+    good_messages = []
+    for m in messages:
+        if "reminder" not in m.text.lower():
+            good_messages.append(m)
+    return good_messages
+
+def create_reminder_text(original: str) -> str:
+    """ Returns the formatted reminder wording """
+    #TODO(Ned): date options so we can adjust when this runs
+    return f"Reminder: {original}\n*This item needs to be claimed or it will be removed*"
 
 @app.get("/poll/")
 def poll_notifications():
     try:
         messages = get_channel_messages("slackbot-testing")
-        recent_messages = filter_stale_messages(messages, datetime.timedelta(days=60))
+        recent_messages = filter_stale_messages(messages, datetime.timedelta(days=1))
         images_messages = filter_nonimage_messages(recent_messages)
+        original_messages = filter_reminder_messages(images_messages)
 
-        offset_m = int(os.environ["OFFSET_M"])
-
-        for m in images_messages:
-            print(f"Debug: Posting {m}")
-            # if "Reminder" in m.text:
-                # continue
-
-            # post_time = max(m.ts, datetime.datetime.now()) + datetime.timedelta(
-                # minutes=offset_m
-            # )
-            # message = f"Reminder: {m.text}"
-            # print(f"Posting {message} at: {post_time.strftime('%Y-%m-%d %H:%M:%S')}")
-            # slack_client.chat_scheduleMessage(
-                # channel=get_channel_id_by_name("slackbot-testing"),
-                # post_at=str(post_time.timestamp()),
-                # text=message,
-            # )
-            # break
+        for m in original_messages:
+            # TODO(Ned): download file so we can reupload it
+            message = create_reminder_text(m.text)
+            logging.info(f"Posting {message} at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            slack_client.chat_postMessage(
+                channel=get_channel_id_by_name("slackbot-testing"),
+                text=message,
+            )
+            break
 
     except Exception as e:
         print(f"ERROR: Failed with exception: {e}")
