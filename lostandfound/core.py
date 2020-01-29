@@ -11,8 +11,12 @@ app = FastAPI()
 slack_token = os.environ["SLACK_TOKEN"]
 slack_client = slack.WebClient(token=slack_token)
 
-log_level = os.environ.get('LOGLEVEL', 'WARNING').upper()
+log_level = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=log_level)
+
+START_SEARCH = datetime.timedelta(days=14)
+END_SEARCH = datetime.timedelta(days=13)
+
 
 class Message:
     class ContentType(Enum):
@@ -58,12 +62,12 @@ def get_channel_messages(channel_name: str) -> List[Message]:
 
 
 def filter_stale_messages(
-    messages: List[Message], age: datetime.timedelta
+    messages: List[Message], oldest: datetime.timedelta, youngest: datetime.timedelta
 ) -> List[Message]:
     """ Return a list of all messages posted that are younger than `age` """
     good_messages = []
     for m in messages:
-        if m.ts > datetime.datetime.now() - age:
+        if datetime.datetime.now() - oldest < m.ts < datetime.datetime.now() - youngest:
             good_messages.append(m)
     return good_messages
 
@@ -76,6 +80,7 @@ def filter_nonimage_messages(messages: List[Message]) -> List[Message]:
             good_messages.append(m)
     return good_messages
 
+
 def filter_reminder_messages(messages: List[Message]) -> List[Message]:
     """ Returns a list of all messsages that are not reminder posts """
     good_messages = []
@@ -84,26 +89,31 @@ def filter_reminder_messages(messages: List[Message]) -> List[Message]:
             good_messages.append(m)
     return good_messages
 
+
 def create_reminder_text(original: str) -> str:
     """ Returns the formatted reminder wording """
-    #TODO(Ned): date options so we can adjust when this runs
-    return f"Reminder: {original}\n*This item needs to be claimed or it will be removed*"
+    # TODO(Ned): date options so we can adjust when this runs
+    return (
+        f"Reminder: {original}\n*This item needs to be claimed or it will be removed*"
+    )
+
 
 @app.get("/poll/")
 def poll_notifications():
     try:
         messages = get_channel_messages("slackbot-testing")
-        recent_messages = filter_stale_messages(messages, datetime.timedelta(days=1))
+        recent_messages = filter_stale_messages(messages, START_SEARCH, END_SEARCH)
         images_messages = filter_nonimage_messages(recent_messages)
         original_messages = filter_reminder_messages(images_messages)
 
         for m in original_messages:
             # TODO(Ned): download file so we can reupload it
             message = create_reminder_text(m.text)
-            logging.info(f"Posting {message} at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            logging.info(
+                f"Posting {message} at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
             slack_client.chat_postMessage(
-                channel=get_channel_id_by_name("slackbot-testing"),
-                text=message,
+                channel=get_channel_id_by_name("slackbot-testing"), text=message,
             )
             break
 
