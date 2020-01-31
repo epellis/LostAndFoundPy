@@ -1,13 +1,12 @@
-from fastapi import FastAPI
 import os
 import slack
 from typing import List, Dict
-import time
 import datetime
 from enum import Enum
 import logging
+from flask import Flask
 
-app = FastAPI()
+app = Flask(__name__)
 slack_token = os.environ["SLACK_TOKEN"]
 slack_client = slack.WebClient(token=slack_token)
 
@@ -98,7 +97,7 @@ def create_reminder_text(original: str) -> str:
     )
 
 
-@app.get("/poll/")
+@app.route("/poll/")
 def poll_notifications():
     try:
         messages = get_channel_messages("slackbot-testing")
@@ -121,3 +120,7 @@ def poll_notifications():
         print(f"ERROR: Failed with exception: {e}")
         return {"success": False, "error": str(e)}
     return {"success": True}
+
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=8000, debug=True)
