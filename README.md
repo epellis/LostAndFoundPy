@@ -10,7 +10,7 @@ pip install  -r requirements.txt
 
 ## Development
 This app exposes a small API endpoint under `/poll`. To run a server, run:
-`SLACK_TOKEN="XXX" python lostandfound/core.py`
+`SLACK_TOKEN="XXX" python main.py`
 
 When you are ready to commit code, please run the 
 [Black](https://black.readthedocs.io/en/stable/installation_and_usage.html) 

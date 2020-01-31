@@ -1,2 +1,4 @@
 runtime: python37
-entrypoint: 
+
+includes:
+  - env_variables.yaml
