@@ -12,6 +12,7 @@ ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
 
+
 app = Flask(__name__)
 slack_token = os.environ["SLACK_TOKEN"]
 slack_client = slack.WebClient(token=slack_token, ssl=ssl_context)
@@ -21,6 +22,8 @@ logging.basicConfig(level=log_level)
 
 START_SEARCH = datetime.timedelta(days=14)
 END_SEARCH = datetime.timedelta(days=13)
+
+logging.info(f"Slack Token Present: {'' != os.environ['SLACK_TOKEN']}")
 
 
 class Message:

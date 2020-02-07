@@ -17,4 +17,16 @@ When you are ready to commit code, please run the
 formatter on your code: `black .`
 
 ## Deployment
+Key and deploy credentials are stored in a file called `app.yaml`. This stores
+your Google App Engine configuration. Since it has private keys, it cannot
+be added to version control. To deploy this app, you will need to put the
+following in to the newly created file:
+```
+runtime: python37
+
+env_variables:
+    SLACK_TOKEN: "<REPLACE_ME>"
+    LOGLEVEL: "DEBUG"
+```
+
 When you are ready to deploy the app to the cloud run: `gcloud app deploy`
