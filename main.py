@@ -20,8 +20,8 @@ slack_client = slack.WebClient(token=slack_token, ssl=ssl_context)
 log_level = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=log_level)
 
-START_SEARCH = datetime.timedelta(days=14)
-END_SEARCH = datetime.timedelta(days=13)
+START_SEARCH = datetime.timedelta(days=int(os.environ["FIRST_DAY_AGO"]))
+END_SEARCH = datetime.timedelta(days=int(os.environ["LAST_DAY_AGO"]))
 
 logging.info(f"Slack Token Present: {'' != os.environ['SLACK_TOKEN']}")
 
@@ -74,8 +74,11 @@ def filter_stale_messages(
 ) -> List[Message]:
     """ Return a list of all messages posted that are younger than `age` """
     good_messages = []
+    oldest_date = datetime.datetime.now() - oldest
+    youngest_date = datetime.datetime.now() - youngest
+    logging.debug(f"Looking for messages in {oldest_date} : {youngest_date}")
     for m in messages:
-        if datetime.datetime.now() - oldest < m.ts < datetime.datetime.now() - youngest:
+        if oldest_date < m.ts < youngest_date:
             good_messages.append(m)
     return good_messages
 
@@ -110,7 +113,9 @@ def create_reminder_text(original: str) -> str:
 def poll_notifications():
     try:
         messages = get_channel_messages("slackbot-testing")
+        logging.debug(f"Found {len(messages)}")
         recent_messages = filter_stale_messages(messages, START_SEARCH, END_SEARCH)
+        logging.debug(f"After Filter: {len(messages)} messages: {recent_messages}")
         images_messages = filter_nonimage_messages(recent_messages)
         original_messages = filter_reminder_messages(images_messages)
 
