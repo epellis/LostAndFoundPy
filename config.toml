@@ -1,0 +1,10 @@
+[intervals]
+    [[intervals.warning]]
+        earliestDayBefore = 7
+        latestDayAfter = 6
+        message = "*This item needs to be claimed or it will be removed in 1 week*"
+
+    [[intervals.final]]
+        earliestDayBefore = 14
+        latestDayAfter = 13
+        message = "*This item is now removed*"

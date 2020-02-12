@@ -5,6 +5,8 @@ from typing import List, Dict
 import datetime
 from enum import Enum
 import logging
+import toml
+import dataclasses
 from flask import Flask
 
 # XXX: Asyncio cannot resolve SSL certs so we tell it to not bother
@@ -20,10 +22,35 @@ slack_client = slack.WebClient(token=slack_token, ssl=ssl_context)
 log_level = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=log_level)
 
-START_SEARCH = datetime.timedelta(days=int(os.environ["FIRST_DAY_AGO"]))
-END_SEARCH = datetime.timedelta(days=int(os.environ["LAST_DAY_AGO"]))
-
 logging.info(f"Slack Token Present: {'' != os.environ['SLACK_TOKEN']}")
+
+
+class Config:
+    """ Config is a type safe interface between the running app and the provided
+        configuration file, config.toml
+    """
+
+    @dataclasses.dataclass
+    class Interval:
+        """ Interval is a dataclass that stores the config in config.toml in
+            a typed format that can easily be accessed
+        """
+
+        earliestDayBefore: datetime.timedelta
+        latestDayAfter: datetime.timedelta
+        message: str
+
+        @classmethod
+        def from_dict(cls, d: Dict):
+            start = datetime.timedelta(days=d["earliestDayBefore"])
+            end = datetime.timedelta(days=d["latestDayAfter"])
+            return cls(start, end, d["message"])
+
+    def __init__(self, config_file: str):
+        self.toml = toml.load(config_file)
+        self.intervals = [
+            Config.Interval.from_dict(i[0]) for i in self.toml["intervals"].values()
+        ]
 
 
 class Message:
@@ -111,24 +138,34 @@ def create_reminder_text(original: str) -> str:
 
 @app.route("/poll/")
 def poll_notifications():
+    config = Config("config.toml")
+    logging.info(f"Loaded config with intervals: {config.intervals}")
+
     try:
         messages = get_channel_messages("slackbot-testing")
-        logging.debug(f"Found {len(messages)}")
-        recent_messages = filter_stale_messages(messages, START_SEARCH, END_SEARCH)
-        logging.debug(f"After Filter: {len(messages)} messages: {recent_messages}")
-        images_messages = filter_nonimage_messages(recent_messages)
-        original_messages = filter_reminder_messages(images_messages)
-
-        for m in original_messages:
-            # TODO(Ned): download file so we can reupload it
-            message = create_reminder_text(m.text)
+        for interval in config.intervals:
+            recent_messages = filter_stale_messages(
+                messages, interval.earliestDayBefore, interval.latestDayAfter
+            )
+            logging.info(f"After Recent Filter: {len(recent_messages)} messages remain")
+            images_messages = filter_nonimage_messages(recent_messages)
             logging.info(
-                f"Posting {message} at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                f"After Non image Filter: {len(images_messages)} messages remain"
             )
-            slack_client.chat_postMessage(
-                channel=get_channel_id_by_name("slackbot-testing"), text=message,
+            original_messages = filter_reminder_messages(images_messages)
+            logging.info(
+                f"After Original Filter: {len(original_messages)} messages remain"
             )
-            break
+
+            for m in original_messages:
+                message = create_reminder_text(m.text)
+                logging.info(
+                    f"Posting {message} at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+                slack_client.chat_postMessage(
+                    channel=get_channel_id_by_name("slackbot-testing"), text=message,
+                )
+                break
 
     except Exception as e:
         print(f"ERROR: Failed with exception: {e}")

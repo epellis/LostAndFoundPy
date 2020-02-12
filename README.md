@@ -26,8 +26,14 @@ runtime: python37
 env_variables:
     SLACK_TOKEN: "<REPLACE_ME>"
     LOGLEVEL: "DEBUG"
-    FIRST_DAY_AGO: "15"
-    LAST_DAY_AGO: "14
 ```
 
 When you are ready to deploy the app to the cloud run: `gcloud app deploy`
+
+## Configuration
+App configuration is stored in `config.toml`. [Toml](https://github.com/toml-lang/toml)
+is a newer, more feature complete version of the `.ini` standard and provides
+similar features to other formats like `.json`, and `.yaml`. Since the TOML
+spec supports comments, the configuration file is self-documenting and should be
+easy to extend. Since no keys are stored in this document, you are fine checking it
+into version control.
