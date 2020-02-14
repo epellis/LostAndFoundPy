@@ -51,6 +51,7 @@ class Config:
         self.intervals = [
             Config.Interval.from_dict(i[0]) for i in self.toml["intervals"].values()
         ]
+        self.channel_name = self.toml["slack"]["channelName"]
 
 
 class Message:
@@ -128,12 +129,9 @@ def filter_reminder_messages(messages: List[Message]) -> List[Message]:
     return good_messages
 
 
-def create_reminder_text(original: str) -> str:
+def create_reminder_text(original: str, addition: str) -> str:
     """ Returns the formatted reminder wording """
-    # TODO(Ned): date options so we can adjust when this runs
-    return (
-        f"Reminder: {original}\n*This item needs to be claimed or it will be removed*"
-    )
+    return f"Reminder: {original}\n{addition}"
 
 
 @app.route("/poll/")
@@ -142,8 +140,11 @@ def poll_notifications():
     logging.info(f"Loaded config with intervals: {config.intervals}")
 
     try:
-        messages = get_channel_messages("slackbot-testing")
+        messages = get_channel_messages(config.channel_name)
         for interval in config.intervals:
+            logging.info(
+                f"Scanning: {interval.earliestDayBefore} to {interval.latestDayAfter}"
+            )
             recent_messages = filter_stale_messages(
                 messages, interval.earliestDayBefore, interval.latestDayAfter
             )
@@ -158,7 +159,7 @@ def poll_notifications():
             )
 
             for m in original_messages:
-                message = create_reminder_text(m.text)
+                message = create_reminder_text(m.text, interval.message)
                 logging.info(
                     f"Posting {message} at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                 )
