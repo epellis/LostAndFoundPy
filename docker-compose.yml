@@ -1,7 +1,7 @@
 version: "3"
 services:
   lostandfound:
-    build: .
+    image: "epelesis/lostandfound"
     ports:
         - "5000:5000"
     environment:

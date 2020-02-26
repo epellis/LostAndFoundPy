@@ -19,6 +19,8 @@ When you are ready to commit code, please run the
 formatter on your code: `black .`
 
 ## Deployment
+Build the dockerfile with: `docker build . -t epelesis/lostandfound`
+
 You can run the image using: `LOGLEVEL="INFO" SLACK_TOKEN="XXX" docker-compose up`
 
 You can run the image as a daemon using: `LOGLEVEL="INFO" SLACK_TOKEN="XXX" docker-compose up -d`
@@ -46,3 +48,7 @@ similar features to other formats like `.json`, and `.yaml`. Since the TOML
 spec supports comments, the configuration file is self-documenting and should be
 easy to extend. Since no keys are stored in this document, you are fine checking
 it into version control.
+
+Cron configuration is in `entrypoint.sh`. This file is run as the last step
+of `docker-compose up`. It writes a cron task to `wget` an endpoint every 24
+hours and then launches the Python app. 
