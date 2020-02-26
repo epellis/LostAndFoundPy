@@ -10,4 +10,4 @@
         message = "*This item is now removed*"
 
 [slack]
-channelName = "lost-and-found"
+channelName = "slackbot-testing"
