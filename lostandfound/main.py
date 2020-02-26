@@ -52,6 +52,9 @@ class Config:
             Config.Interval.from_dict(i[0]) for i in self.toml["intervals"].values()
         ]
         self.channel_name = self.toml["slack"]["channelName"]
+        logging.info(
+            f"Loaded Config: Channel: {self.channel_name}, Intervals: {self.intervals}"
+        )
 
 
 class Message:
@@ -137,7 +140,7 @@ def create_reminder_text(original: str, addition: str) -> str:
 @app.route("/poll/")
 def poll_notifications():
     config = Config("config.toml")
-    logging.info(f"Loaded config with intervals: {config.intervals}")
+    # logging.info(f"Loaded config with intervals: {config.intervals}")
 
     try:
         messages = get_channel_messages(config.channel_name)
@@ -175,4 +178,5 @@ def poll_notifications():
 
 
 if __name__ == "__main__":
+    _ = Config("config.toml")  # For Debug
     app.run(host="0.0.0.0", debug=True)
