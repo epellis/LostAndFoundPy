@@ -1,5 +1,8 @@
 # LostAndFound
 
+## Prerequisite: Generating A Slack Token
+TODO
+
 ## Development
 You can install requirements and test locally using the following setup:
 ```
@@ -24,7 +27,7 @@ If you ever need to clear everything and start over, run: `docker system prune -
 
 ## Uploading to Docker Hub
 When you are done developing your app and ready to make a release you can
-build it using the following commands. Replace `epelesis` with your docker hub
+build it using the following commands. Replace `epelesis` with your [Docker Hub](https://hub.docker.com/)
 account username. 
 
 Build the dockerfile with: `docker build . -t epelesis/lostandfound`
