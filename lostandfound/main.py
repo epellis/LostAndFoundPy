@@ -95,7 +95,7 @@ def get_channel_id_by_name(name: str) -> str:
 
 def get_channel_messages(channel_name: str) -> List[Message]:
     """ Returns all messages posted in a channel """
-    channel_id = get_channel_id_by_name("slackbot-testing")
+    channel_id = get_channel_id_by_name(channel_name)
     messages = slack_client.channels_history(channel=channel_id)["messages"]
     return [Message.from_dict(m) for m in messages]
 
@@ -144,6 +144,7 @@ def poll_notifications():
 
     try:
         messages = get_channel_messages(config.channel_name)
+        logging.info(f"Received a total of {len(messages)} messages")
         for interval in config.intervals:
             logging.info(
                 f"Scanning: {interval.earliestDayBefore} to {interval.latestDayAfter}"
@@ -167,7 +168,7 @@ def poll_notifications():
                     f"Posting {message} at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                 )
                 slack_client.chat_postMessage(
-                    channel=get_channel_id_by_name("slackbot-testing"), text=message,
+                    channel=get_channel_id_by_name(config.channel_name), text=message,
                 )
                 break
 

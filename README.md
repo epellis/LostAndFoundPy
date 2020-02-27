@@ -1,4 +1,5 @@
 # LostAndFound
+![Docker Pulls](https://img.shields.io/docker/pulls/epelesis/lostandfound)
 
 ## Prerequisite: Generating A Slack Token
 TODO
@@ -12,7 +13,7 @@ pip install  -r requirements.txt
 ```
 
 This app exposes a small API endpoint under `/poll`. To run a server to test on,
-run: `SLACK_TOKEN="XXX" python main.py`
+run: `LOGLEVEL="INFO" SLACK_TOKEN="XXX" python main.py`
 
 When you are ready to commit code, please run the 
 [Black](https://black.readthedocs.io/en/stable/installation_and_usage.html) 

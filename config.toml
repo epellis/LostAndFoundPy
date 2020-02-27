@@ -9,5 +9,10 @@
         latestDayAfter = 13
         message = "*This item is now removed*"
 
+    [[intervals.detect]]
+        earliestDayBefore = 1
+        latestDayAfter = 0
+        message = "*LostandFound is now tracking this item*"
+
 [slack]
 channelName = "lost-and-found"
